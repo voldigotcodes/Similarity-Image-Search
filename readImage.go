@@ -1,8 +1,11 @@
 package main
 
-import (
-	_ "image/jpeg"
-)
+// import (
+// 	"fmt"
+// 	"image"
+// 	_ "image/jpeg"
+// 	"os"
+// )
 
 // type Histo struct {
 // 	Name string
@@ -47,6 +50,8 @@ import (
 // 			rgbMax[2] += float32(green)
 
 // 			result = append(result, float32(red), float32(blue), float32(green))
+
+// 			fmt.Printf("Pixel at (%d, %d): R=%d, G=%d, B=%d\n", x, y, red, green, blue)
 // 		}
 // 	}
 

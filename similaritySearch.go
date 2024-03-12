@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"image"
+	_ "image/jpeg"
 	"io/ioutil"
 	"log"
 	"os"
@@ -25,13 +26,10 @@ func computeHistogram(imagePath string, depth int) (Histo, error) {
 	defer file.Close()
 
 	// Decode the JPEG image
-	file.Seek(0, 0)
 	img, _, err := image.Decode(file)
-	fmt.Print("|| USED ||")
 	if err != nil {
 		return Histo{"", nil}, err
 	}
-	fmt.Print("|| USED ||")
 	// Get the dimensions of the image
 	bounds := img.Bounds()
 	width, height := bounds.Max.X, bounds.Max.Y
@@ -110,8 +108,7 @@ func splitSlice(slice []string, k int) [][]string {
 	return result
 }
 
-func computeHistograms(imagePaths []string, depth int, wg *sync.WaitGroup, hChan chan<- Histo) {
-	defer wg.Done()
+func computeHistograms(imagePaths []string, depth int, hChan chan<- Histo) {
 
 	for _, imagePath := range imagePaths {
 		val, err := computeHistogram(imagePath, depth)
@@ -161,20 +158,24 @@ func main() {
 
 	k := 1
 	dataset := splitSlice(readFiles(args[1]), k)
-	histogramChannel := make(chan Histo, len(dataset[0])*len(dataset))
+	histogramChannel := make(chan Histo)
 
 	for _, subSlice := range dataset {
 		wg.Add(1)
-		go computeHistograms(subSlice, 10, &wg, histogramChannel)
+		go func() {
+			defer wg.Done()
+			computeHistograms(subSlice, 10, histogramChannel)
+		}()
 	}
-	close(histogramChannel)
 
 	queryImage, err := computeHistogram(args[0], 10)
 	if err != nil {
 		fmt.Printf("Error: %s\n", err)
 		return
 	}
+
 	wg.Wait()
+	close(histogramChannel)
 
 	highest := make([]Pair, 0, 5)
 	for value := range histogramChannel {
