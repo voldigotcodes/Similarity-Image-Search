@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"image"
 	_ "image/jpeg"
 	"os"
@@ -30,11 +29,11 @@ func computeHistogram(imagePath string, depth int) (Histo, error) {
 	// Get the dimensions of the image
 	bounds := img.Bounds()
 	width, height := bounds.Max.X, bounds.Max.Y
-
-	// Display RGB values for the first 5x5 pixels
-	// remove y < 5 and x < 5  to scan the entire image
-	for y := 0; y < height && y < 5; y++ {
-		for x := 0; x < width && x < 5; x++ {
+	result := make([]int, depth)
+	rgbMax := make([]int, 10)
+	// Scaning the RGB values for the image
+	for y := 0; y < height; y++ {
+		for x := 0; x < width; x++ {
 
 			// Convert the pixel to RGBA
 			red, green, blue, _ := img.At(x, y).RGBA()
@@ -44,12 +43,21 @@ func computeHistogram(imagePath string, depth int) (Histo, error) {
 			blue >>= 8
 			green >>= 8
 
-			// Display the RGB values
-			fmt.Printf("Pixel at (%d, %d): R=%d, G=%d, B=%d\n", x, y, red, green, blue)
+			//Data for normalization
+			rgbMax[0] += int(red)
+			rgbMax[1] += int(blue)
+			rgbMax[2] += int(green)
+
+			result = append(result, int(red), int(blue), int(green))
 		}
 	}
 
-	h := Histo{imagePath, make([]int, depth)}
+	//Normalizing the Histogram
+	for i, value := range result {
+		result[i] = value / rgbMax[i%3]
+	}
+
+	h := Histo{imagePath, result}
 	return h, nil
 }
 
