@@ -11,6 +11,8 @@ import (
 	"sync"
 )
 
+var wg sync.WaitGroup
+
 type Histo struct {
 	Name string
 	H    []float32
@@ -108,11 +110,12 @@ func splitSlice(slice []string, k int) [][]string {
 	return result
 }
 
-func computeHistograms(imagePaths []string, depth int, hChan chan<- Histo) {
-
+func computeHistograms(imagePaths []string, depth int, hChan chan Histo) {
+	//defer fmt.Print("|| TEST ||")
 	for _, imagePath := range imagePaths {
-		val, err := computeHistogram(imagePath, depth)
+		val, err := computeHistogram(("/Users/voldischool/Documents/GO-Projects/Similarity Image Search/res/imageDataset2_15_20/" + imagePath), depth)
 		if err != nil {
+			fmt.Printf("Error: %s\n", err)
 			continue
 		}
 		hChan <- val
@@ -131,6 +134,7 @@ func compareHistograms(h1 Histo, h2 Histo) (result float32) {
 	for i, _ := range h2.H {
 		result += min(h1.H[i], h2.H[i])
 	}
+
 	return result
 }
 
@@ -154,28 +158,26 @@ func main() {
 	args := []string{"/Users/voldischool/Documents/GO-Projects/Similarity Image Search/res/queryImages/q00.jpg",
 		"/Users/voldischool/Documents/GO-Projects/Similarity Image Search/res/imageDataset2_15_20/"}
 
-	wg := sync.WaitGroup{}
+	//k := 1
+	dataset := readFiles(args[1])
+	histogramChannel := make(chan Histo, len(dataset))
 
-	k := 1
-	dataset := splitSlice(readFiles(args[1]), k)
-	histogramChannel := make(chan Histo)
+	//for _, subSlice := range dataset {
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		computeHistograms(dataset, 10, histogramChannel)
+	}()
+	//	}
 
-	for _, subSlice := range dataset {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			computeHistograms(subSlice, 10, histogramChannel)
-		}()
-	}
+	wg.Wait()
+	close(histogramChannel)
 
 	queryImage, err := computeHistogram(args[0], 10)
 	if err != nil {
 		fmt.Printf("Error: %s\n", err)
 		return
 	}
-
-	wg.Wait()
-	close(histogramChannel)
 
 	highest := make([]Pair, 0, 5)
 	for value := range histogramChannel {
@@ -194,5 +196,5 @@ func main() {
 	for _, value := range highest {
 		fmt.Print("|| " + value.h.Name + " ||")
 	}
-
+	fmt.Print("|| DONE ||")
 }
