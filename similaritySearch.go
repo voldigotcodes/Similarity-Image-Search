@@ -131,7 +131,7 @@ func min(a, b float32) float32 {
 
 func compareHistograms(h1 Histo, h2 Histo) (result float32) {
 	result = 0.0
-	for i, _ := range h2.H {
+	for i := range h2.H {
 		result += min(h1.H[i], h2.H[i])
 	}
 
@@ -158,17 +158,17 @@ func main() {
 	args := []string{"/Users/voldischool/Documents/GO-Projects/Similarity Image Search/res/queryImages/q00.jpg",
 		"/Users/voldischool/Documents/GO-Projects/Similarity Image Search/res/imageDataset2_15_20/"}
 
-	//k := 1
-	dataset := readFiles(args[1])
-	histogramChannel := make(chan Histo, len(dataset))
+	k := 10
+	dataset := splitSlice(readFiles(args[1]), k)
+	histogramChannel := make(chan Histo, len(dataset)*len(dataset[0]))
 
-	//for _, subSlice := range dataset {
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		computeHistograms(dataset, 10, histogramChannel)
-	}()
-	//	}
+	for _, subSlice := range dataset {
+		wg.Add(1)
+		go func(sub []string) {
+			defer wg.Done()
+			computeHistograms(sub, 10, histogramChannel)
+		}(subSlice)
+	}
 
 	wg.Wait()
 	close(histogramChannel)
@@ -194,7 +194,7 @@ func main() {
 	}
 
 	for _, value := range highest {
-		fmt.Print("|| " + value.h.Name + " ||")
+		fmt.Print("\n || " + value.h.Name + " ||")
 	}
 	fmt.Print("|| DONE ||")
 }
