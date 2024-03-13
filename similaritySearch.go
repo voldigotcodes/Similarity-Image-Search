@@ -155,11 +155,15 @@ func minPair(slice []Pair) (index int) {
 
 func main() {
 	fmt.Print("|| STARTING ||")
-	args := []string{"/Users/voldischool/Documents/GO-Projects/Similarity Image Search/res/queryImages/q00.jpg",
-		"/Users/voldischool/Documents/GO-Projects/Similarity Image Search/res/imageDataset2_15_20/"}
+	//[]string{"res/queryImages/q00.jpg",
+	//	"res/imageDataset2_15_20/"}
+	args := os.Args
 
-	k := 10
-	dataset := splitSlice(readFiles(args[1]), k)
+	args[1] = "res/queryImages/" + args[1]
+	args[2] = "res/" + args[2] + "/"
+
+	k := 20
+	dataset := splitSlice(readFiles(args[2]), k)
 	histogramChannel := make(chan Histo, len(dataset)*len(dataset[0]))
 
 	for _, subSlice := range dataset {
@@ -173,7 +177,7 @@ func main() {
 	wg.Wait()
 	close(histogramChannel)
 
-	queryImage, err := computeHistogram(args[0], 10)
+	queryImage, err := computeHistogram(args[1], 10)
 	if err != nil {
 		fmt.Printf("Error: %s\n", err)
 		return
